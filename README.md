@@ -333,3 +333,52 @@ Bagian ini akan mengambil waktu saat ini dalam format `YYYY/MM/DD/HH` menggunaka
 agg_file="$log_directory/metrics_agg_$time_format.log"
 ```
 Di sini, potongan _script_ tersebut akan memberikan nama _file aggregation_ dengan menggabungkan _path_ dari `log_directory` yaitu pada kasus ini adalah `/home/ubuntu/metrics`, _string "metrics_agg_"_, _timestamp_ dari `time_format`, dan ekstensi `.log`, sehingga setiap file log memiliki nama unik berdasarkan waktu pembuatannya. Sehingga di akhir, _file aggregation_ yang dibuat akan memiliki format nama `path/metrics_agg_YYYY/MM/DD/HH.log`.
+
+```bash
+previous_hour=$(date -d "1 hour ago" +"%Y%m%d%H")
+```
+Bagian ini mengambil waktu satu jam yang lalu dalam format `YYYY/MM/DD/HH` menggunakan perintah `date`. `-d "1 hour ago"` memberi tahu `date` untuk menghitung waktu satu jam sebelum waktu saat ini. `+"%Y%m%d%H"` akan menetapkan format hasilnya agar hanya menampilkan tahun, bulan, hari, dan jam. `$()` menjalankan perintah dan menyimpan _output_ ke dalam variabel `previous_hour`.
+
+```bash
+log_files=$(ls $log_directory/metrics_$previous_hour*.log)
+```
+Di sini, program mencari dan mencocokkan semua _file log_ yang dibuat pada jam sebelumnya di dalam `log_directory` menggunakan perintah `ls`. Variabel `previous_hour` yang sudah diisi akan berguna untuk memastikan setiap _file log_ pada jam sebelumnya akan tercantum ke dalam format `YYYY/MM/DD/HH*`. Namun karena format tanggal pada _file log_ sampai ke menit dan detik (tidak hanya berhenti pada jam), maka kita membutuhkan tanda `*` yang menandakan bahwa format setelah jam (`HH`) dibebaskan atau _arbitrary_. Semua _file log_ yang cocok akan dimasukkan ke dalam variabel `log_files` menggunakan tanda `$()`.
+
+```bash
+awk -F ',' '
+```
+Penggunaan `awk -F ','` berfungsi untuk mengambil data dari _file log_. Bagian `-F ','` digunakan untuk menetapkan koma `(,)` sebagai pemisah kolom _(field separator)_, sehingga `awk` dapat membaca dan memproses setiap nilai dalam _file log_ sebagai kolom yang terpisah sesuai dengan yang diinginkan. Karakter `'` berfungsi sebagai pembuka `awk`.
+
+```bash
+NR == 1 { next } 
+```
+Bagian ini digunakan dalam `awk` untuk melewati baris pertama dalam _file log_, karena berisi _header_ yang tidak perlu diproses. `NR == 1` berarti jika baris yang sedang diproses adalah baris pertama, maka akan `next`, yaitu memberi tahu `awk` untuk langsung melanjutkan ke baris berikutnya tanpa menjalankan perintah lain.
+
+```bash
+if(NR == 2){
+        ...
+}
+```
+Untuk kondisi `if` di sini, program akan melakukan perintah yang telah ditentukan jika baris yang sedang diproses adalah baris kedua (`NR == 2`). 
+
+Bagian di dalam perintah `if` akan dijelaskan sebagai berikut: 
+   - ```bash
+     for(i = 1; i <= NF; i++){
+            ...
+     }
+     ```
+     Bagian ini adalah perulangan atau `loop` menggunakan perintah `for` yang akan terus berjalan dari indeks ke-i sampai jumlah kolom yang ada (`i <= NF`). Variabel `i` akan _increment_.
+
+     Isi dari perintah `for` akan dijelaskan sebagai berikut:
+
+     - ```bash
+       min[i] = max[i] = $i
+       ```
+       Setiap kolom ke-i diinisialisasi sebagai nilai minimum dan maksimum pertama kali.
+     	  
+     - ```bash
+       sum[i] = 0
+       count[i] = 0
+       ```
+       Variabel `sum` yang akan menjumlahkan setiap isi dari data yang ada di _file log_ diinisialisasikan sebagai 0, begitu pun dengan variabel `count` yang akan menghitung berapa kali masing-masing data muncul. Dengan kedua variabel ini, bisa didapatkan nilai rata-rata dari semua data yang ada. Diisi sesuai dengan indeks ke-i yang merepresentasikan kolom.
+
