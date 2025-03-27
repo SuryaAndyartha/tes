@@ -382,3 +382,203 @@ Bagian di dalam perintah `if` akan dijelaskan sebagai berikut:
        ```
        Variabel `sum` yang akan menjumlahkan setiap isi dari data yang ada di _file log_ diinisialisasikan sebagai 0, begitu pun dengan variabel `count` yang akan menghitung berapa kali masing-masing data muncul. Dengan kedua variabel ini, bisa didapatkan nilai rata-rata dari semua data yang ada. Diisi sesuai dengan indeks ke-i yang merepresentasikan kolom.
 
+```bash
+for(i = 1; i <= NF; i++){
+        ...
+    }
+}
+```
+Bagian ini adalah perulangan atau `loop` menggunakan perintah `for` yang akan terus berjalan dari indeks ke-i sampai jumlah kolom yang ada (`i <= NF`). Variabel `i` akan _increment_.
+
+Isi dari perintah `for` akan dijelaskan sebagai berikut:
+
+ - ```bash
+   if(i == 10){
+      path_value = $i  
+      continue
+   } 
+   ```
+   Jika variabel `i` menunjukkan kolom ke-10 (kolom nama _path_), maka variabel `path_value` akan langsung diisi oleh apa yang tertulis pada kolom ke-10 tersebut, yaitu `/home/ubuntu`. Lalu program akan langsung mengabaikan pemrosesan lain akibat perintah `continue`.
+
+ - ```bash
+   else if(i == 11){
+      gsub(/M/, "", $i)
+   }
+   ```
+   Jika variabel `i` menunjukkan kolom ke-11 (kolom _path size_), maka akan terjadi pemisahan terlebih dahulu antara angka dengan karakter 'M' yang tertera pada kolom tersebut. Dengan `gsub`, program bisa mengganti karakter 'M' (`/M/`) dengan petik kosong (`""`). Dalam arti lain, karakter 'M' akan dihapus agar memudahkan perhitungan. Lalu `gsub` akan diaplikasikan ke kolom yang ditunjuk oleh `$i`, yaitu kolom ke-11.
+
+ - ```bash
+   if($i+0 == $i){
+      if($i < min[i]){ min[i] = $i }
+      if($i > max[i]){ max[i] = $i }
+      sum[i] += $i
+      count[i]++
+   }
+   ```
+   Selain kolom ke-10 dan ke-11 yang sudah diantisipasi pada dua kondisi `if` sebelumnya, maka program akan melanjutkan serangkaian pemrosesan data untuk menentukan nilai maksimal, minimal, dan rata-rata. Pertama-tama, perintah `if` akan memastikan bahwa nilai yang terdapat pada kolom ke-i merupakan suatu angka dengan `$i+0 == $i`. Artinya adalah, jika nilai pada kolom tersebut berupa sebuah string, maka `(string)+0` tidak akan `==` nilai awal (`$i`) karena _string_ ditambah 0 akan menjadi 0. Di sisi lain, jika benar nilainya adalah angka, maka `(angka)+0` akan `==` nilai awal (`$i`). Dengan seperti ini, bisa dipastikan bahwa program akan mengoperasikan nilai yang berupa angka saja dan tidak ada _string_ yang tercampur.
+
+    - `if($i < min[i]){ min[i] = $i }` adalah cara mencari nilai minimal yang sederhana. Jika nilai di kolom ke-i `($i)` lebih kecil dari `min[i]`, maka nilai tersebut menjadi nilai minimal yang baru.
+    - `if($i > max[i]){ max[i] = $i }` adalah cara mencari nilai maksimal yang sederhana. Jika nilai di kolom ke-i `($i)` lebih besar dari `max[i]`, maka nilai tersebut menjadi nilai maksimal yang baru.
+    - `sum[i] += $i` akan menambahkan variabel `sum` pada kolom ke-i `($i)` dengan nilai yang didapatkan dari _file log_ tersebut.
+    - `count[i]++` akan menghitung berapa kali suatu data muncul. Dengan cara ini, bisa dihitung rata-rata dari tiap data.
+  
+```bash
+END {
+    print "type,mem_total,mem_used,mem_free,mem_shared,mem_buff,mem_available,swap_total,swap_used,swap_free,path,path_size"
+```
+`END` digunakan untuk menjalankan perintah setelah semua data selesai diproses. Dalam _script_ ini, akan dicetak semua hasil atau _output_ yang sudah didapatkan. Hal pertama yang akan dilakukan adalah mencetak _header_ bagi _file aggregation_ sesuai dengan format yang diinginkan. 
+
+```bash
+printf "minimum"
+    for(i = 1; i <= NF; i++){
+        if(i == 10){
+            printf ",%s", path_value
+        } 
+	else if(i == 11){
+            printf ",%sM", min[i]
+        } 
+	else{
+            printf ",%s", min[i]
+        }
+    }
+    printf "\n"
+```
+Pencetakan _output_ menggunakan perintah `printf`. Bagian ini akan mencetak kata "minumum" sebagai label di awal baris. Lalu ada perulangan menggunakan perintah `for` yang akan berjalan sebanyak jumlah kolom (`i <= NF`). 
+
+Isi dari perintah `for` akan dijelaskan sebagai berikut:
+
+ - ```bash
+   if(i == 10){
+      printf ",%s", path_value
+   }
+   ```
+   Jika variabel `i` menunjukkan kolom ke-10 (kolom nama _path_), maka akan langsung mencetak isi dari variabel `path_value` sebagai _string_.
+
+ - ```bash
+   else if(i == 11){
+      printf ",%sM", min[i]
+   }
+   ```
+   Jika variabel `i` menunjukkan kolom ke-11 (kolom _path size_), maka akan mencetak nilai minimal (`min[i]`) dari _path size_ sebagai _string_, serta menambahkan karakter 'M' yang sebelumnya sudah dihilangkan/dipisah di awal. Dengan cara ini, penulisan data akan tetap sesuai format.
+
+ - ```bash
+   else{
+      printf ",%s", min[i]
+   }
+   ```
+   Jika bukan kolom ke-10 atau ke-11, maka program akan langsung mencetak nilai minimal (`min[i]`) dari tiap kolom data yang ada sebagai _string_.
+
+ - ```bash
+   printf "\n"
+   ```
+   Mencetak baris baru setelah selesai mencetak semua nilai.
+
+```bash
+ printf "maximum"
+    for(i = 1; i <= NF; i++){
+        if(i == 10){
+            printf ",%s", path_value
+        } 
+	else if(i == 11){
+            printf ",%sM", max[i]
+        } 
+	else{
+            printf ",%s", max[i]
+        }
+    }
+    printf "\n"
+```
+Pencetakan _output_ menggunakan perintah `printf`. Bagian ini akan mencetak kata "maximum" sebagai label di awal baris. Lalu ada perulangan menggunakan perintah `for` yang akan berjalan sebanyak jumlah kolom (`i <= NF`). 
+
+Isi dari perintah `for` akan dijelaskan sebagai berikut:
+
+ - ```bash
+   if(i == 10){
+      printf ",%s", path_value
+   }
+   ```
+   Jika variabel `i` menunjukkan kolom ke-10 (kolom nama _path_), maka akan langsung mencetak isi dari variabel `path_value` sebagai _string_.
+
+ - ```bash
+   else if(i == 11){
+      printf ",%sM", max[i]
+   }
+   ```
+   Jika variabel `i` menunjukkan kolom ke-11 (kolom _path size_), maka akan mencetak nilai maksimal (`max[i]`) dari _path size_ sebagai _string_, serta menambahkan karakter 'M' yang sebelumnya sudah dihilangkan/dipisah di awal. Dengan cara ini, penulisan data akan tetap sesuai format.
+
+ - ```bash
+   else{
+      printf ",%s", max[i]
+   }
+   ```
+   Jika bukan kolom ke-10 atau ke-11, maka program akan langsung mencetak nilai maksimal (`max[i]`) dari tiap kolom data yang ada sebagai _string_.
+
+ - ```bash
+   printf "\n"
+   ```
+   Mencetak baris baru setelah selesai mencetak semua nilai.
+
+```bash
+printf "average"
+    for(i = 1; i <= NF; i++){
+        if(i == 10){
+            printf ",%s", path_value
+        } 
+	else if(i == 11){
+            printf ",%sM", (count[i] > 0 ? sum[i] / count[i] : min[i])
+        } 
+	else{
+            printf ",%.1f", (count[i] > 0 ? sum[i] / count[i] : min[i])
+        }
+    }
+    printf "\n"
+```
+Pencetakan _output_ menggunakan perintah `printf`. Bagian ini akan mencetak kata "average" sebagai label di awal baris. Lalu ada perulangan menggunakan perintah `for` yang akan berjalan sebanyak jumlah kolom (`i <= NF`). 
+
+Isi dari perintah `for` akan dijelaskan sebagai berikut:
+
+ - ```bash
+   if(i == 10){
+      printf ",%s", path_value
+   }
+   ```
+   Jika variabel `i` menunjukkan kolom ke-10 (kolom nama _path_), maka akan langsung mencetak isi dari variabel `path_value` sebagai _string_.
+
+ - ```bash
+   else if(i == 11){
+      printf ",%sM", (count[i] > 0 ? sum[i] / count[i] : min[i])
+   }
+   ```
+   Jika variabel `i` menunjukkan kolom ke-11 (kolom _path size_), maka akan dilakukan pengecekan terlebih dahulu untuk mencegah eror, yaitu pembagian dengan penyebut angka 0. Apakah data _path size_ muncul lebih dari 0 kali (`count[i] > 0 ?`)? Jika iya, maka lakukan perhitungan rata-rata, yaitu total nilai data dibagi banyaknya muncul (`sum[i] / count[i]`). Jika tidak, maka langsung cetak nilai minimalnya saja, dalam kasus ini pasti 0. Pencetakan nilai rata-rata dari _path size_ diperlakukan sebagai _string_, serta menambahkan karakter 'M' yang sebelumnya sudah dihilangkan/dipisah di awal. Dengan cara ini, penulisan data akan tetap sesuai format.
+
+
+ - ```bash
+   else{
+      printf ",%.1f", (count[i] > 0 ? sum[i] / count[i] : min[i])
+   }
+   ```
+   Jika bukan kolom ke-10 atau ke-11, maka akan dilakukan pengecekan terlebih dahulu untuk mencegah eror, yaitu pembagian dengan penyebut angka 0. Apakah data pada kolom ke-i muncul lebih dari 0 kali (`count[i] > 0 ?`)? Jika iya, maka lakukan perhitungan rata-rata, yaitu total nilai data dibagi banyaknya muncul (`sum[i] / count[i]`). Jika tidak, maka langsung cetak nilai minimalnya saja, dalam kasus ini pasti 0. Pencetakan nilai rata-rata dari tiap data pada kolom ke-i diperlakukan sebagai _float_ dengan ketelitian 1 angka di belakang koma.
+
+ - ```bash
+   printf "\n"
+   ```
+   Mencetak baris baru setelah selesai mencetak semua nilai.
+
+```bash
+}' $log_files > $agg_file
+```
+Tanda `}'` adalah penutup dari `END` yang merupakan bagian dari `awk`. `$log_files` `$log_files > $agg_file` berperan untuk mengalihkan (_redirect_) _output_ atau hasil pemrosesan `awk` ke _file_ agregasi.
+
+- Revisi
+   ```bash
+   chmod 400 "$log_file" #Revisi
+   ```
+   Sebelum melakukan demonstrasi, _script_ ini belum berhasil dalam memastikan pemilik untuk hanya mendapatkan akses membaca. Maka dari itu, _script_ sudah direvisi dengan tambahan `chmod 400` yang membuat _file log_ hanya bisa dibaca, tanpa ditulis (_write_).
+
+   Sekarang akses ke pemilik sudah diperbarui.
+   
+   ![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2008-11-37.png?raw=true)
+
+### Foto Hasil Output
+
+![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2008-10-46.png?raw=true)
