@@ -153,7 +153,7 @@ Bagian ini akan mengambil waktu saat ini dalam format `YYYY/MM/DD/HH/MM/SS` meng
 ```bash
 log_file="$log_directory/metrics_$time_format.log"
 ```
-Di sini, potongan _script_ tersebut akan memberikan nama _file log_ dengan menggabungkan _path_ dari `log_directory` yaitu pada kasus ini adalah `/home/ubuntu/metrics`, _string "metrics_"_, _timestamp_ dari `time_format`, dan ekstensi `.log`, sehingga setiap file log memiliki nama unik berdasarkan waktu pembuatannya. Sehingga di akhir, _file log_ yang dibuat akan memiliki format nama `path/metrics_YYYY/MM/DD/HH/MM/SS.log`.
+Di sini, potongan _script_ tersebut akan memberikan nama _file log_ dengan menggabungkan _path_ dari `log_directory` yaitu pada kasus ini adalah `/home/ubuntu/metrics`, _string "metrics_"_, _timestamp_ dari `time_format`, dan ekstensi `.log`, sehingga setiap _file log_ memiliki nama unik berdasarkan waktu pembuatannya. Sehingga di akhir, _file log_ yang dibuat akan memiliki format nama `path/metrics_YYYY/MM/DD/HH/MM/SS.log`.
 
 ```bash
 if [ ! -f $log_file ]; then
@@ -308,6 +308,7 @@ END {
 
 chmod 400 "$agg_file" #Revisi
 ```
+Penjelasan:
 
 ```bash
 #!/bin/bash
@@ -332,7 +333,7 @@ Bagian ini akan mengambil waktu saat ini dalam format `YYYY/MM/DD/HH` menggunaka
 ```bash
 agg_file="$log_directory/metrics_agg_$time_format.log"
 ```
-Di sini, potongan _script_ tersebut akan memberikan nama _file aggregation_ dengan menggabungkan _path_ dari `log_directory` yaitu pada kasus ini adalah `/home/ubuntu/metrics`, _string "metrics_agg_"_, _timestamp_ dari `time_format`, dan ekstensi `.log`, sehingga setiap file log memiliki nama unik berdasarkan waktu pembuatannya. Sehingga di akhir, _file aggregation_ yang dibuat akan memiliki format nama `path/metrics_agg_YYYY/MM/DD/HH.log`.
+Di sini, potongan _script_ tersebut akan memberikan nama _file aggregation_ dengan menggabungkan _path_ dari `log_directory` yaitu pada kasus ini adalah `/home/ubuntu/metrics`, _string "metrics_agg_"_, _timestamp_ dari `time_format`, dan ekstensi `.log`, sehingga setiap _file aggregation_ memiliki nama unik berdasarkan waktu pembuatannya. Sehingga di akhir, _file aggregation_ yang dibuat akan memiliki format nama `path/metrics_agg_YYYY/MM/DD/HH.log`.
 
 ```bash
 previous_hour=$(date -d "1 hour ago" +"%Y%m%d%H")
@@ -582,3 +583,78 @@ Tanda `}'` adalah penutup dari `END` yang merupakan bagian dari `awk`. `$log_fil
 ### Foto Hasil Output
 
 ![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2008-10-46.png?raw=true)
+
+c. uptime_monitor.sh; Code Lengkap:
+
+```bash
+#!/bin/bash
+
+log_directory="/home/ubuntu/metrics"
+mkdir -p "$log_directory"
+
+time_format=$(date +"%Y%m%d%H")
+uptime_file="$log_directory/uptime_$time_format.log"
+
+if [ ! -f $uptime_file ]; then
+        touch $uptime_file
+        echo "uptime,load_avg_1min,load_avg_5min,load_avg_15min" >$uptime_file
+
+	chmod 600 "$uptime_file"
+fi
+
+uptime=$(uptime | awk '{ print $1, $2, $3, $4}')
+load_avg_1min=$(cat /proc/loadavg | awk '{ print $1 }')
+load_avg_5min=$(cat /proc/loadavg | awk '{ print $2 }')
+load_avg_15min=$(cat /proc/loadavg | awk '{ print $3 }')
+
+echo "$uptime$load_avg_1min,$load_avg_5min,$load_avg_15min" >>$uptime_file
+
+chmod 400 "$uptime_file" #Revisi
+```
+Penjelasan:
+
+```bash
+#!/bin/bash
+```
+Baris pertama _script_/program berisi shebang/hashbang yang berfungsi untuk memberi tahu sistem cara menjalankan _script_ tersebut, yaitu dengan dieksekusi langsung atau melalui _Bash_.
+
+```bash
+log_directory="/home/ubuntu/metrics"
+```
+Deklarasi variabel `log_directory` digunakan untuk menentukan lokasi penyimpanan _file log_, serta mempermudah pengelolaan dan perubahan _path_ dalam _script_.
+
+```bash
+mkdir -p "$log_directory"
+```
+Perintah ini akan membuat direktori yang ditentukan dalam `log_directory` jika belum ada, dengan opsi `-p` yang memastikan tidak terjadi eror jika direktori sudah ada.
+
+```bash
+time_format=$(date +"%Y%m%d%H")
+```
+Bagian ini akan mengambil waktu saat ini dalam format `YYYY/MM/DD/HH` menggunakan perintah `date`, lalu hasil atau _output_ dari perintah tersebut akan disimpan dalam variabel `time_format`.
+
+```bash
+uptime_file="$log_directory/uptime_$time_format.log"
+```
+Di sini, potongan _script_ tersebut akan memberikan nama _file uptime_ dengan menggabungkan _path_ dari `log_directory` yaitu pada kasus ini adalah `/home/ubuntu/metrics`, _string "uptime_"_, _timestamp_ dari `time_format`, dan ekstensi `.log`, sehingga setiap _file uptime_ memiliki nama unik berdasarkan waktu pembuatannya. Sehingga di akhir, _file log_ yang dibuat akan memiliki format nama `path/metrics_YYYY/MM/DD/HH/MM/SS.log`.
+
+```bash
+if [ ! -f $log_file ]; then
+        ...
+fi
+```
+Perintah kondisi atau `if` ini memeriksa apakah _file_ yang disimpan dalam variabel `log_file` tidak ada, yang dituliskan dengan ekspresi `(! -f)`, sehingga perintah di dalam blok `then` hanya akan dijalankan jika _file_ tersebut belum dibuat. Dalam _Bash_, perintah `if` ditutup menggunakan `fi`.
+
+Bagian di dalam perintah `if` akan dijelaskan sebagai berikut: 
+   - ```bash
+     touch $log_file
+     ```
+     Perintah `touch` akan membuat _file log_ yang diinginkan sesuai dengan ketentuan dan syarat yang sudah ditetapkan sebelumnya.
+   - ```bash
+     echo "mem_total, mem_used, mem_free, mem_shared, mem_buff, mem_available, swap_total, swap_used, swap_free, path, path_size" >$log_file
+     ```
+     Pada bagian di atas, `echo` akan mencetak bagian _header_ pada _file log_ yang akan dibuat, sehingga isi dari _file_ tersebut akan memiliki keterangan pada baris pertama mengenai informasi apa saja yang tertera di dalamnya. Setelah itu, _output_ dari perintah `echo` akan ditulis ke dalam _file log_ yang sudah dibuat oleh `>$log_file`.
+   - ```bash
+     chmod 600 "$log_file"
+     ```
+     Saat ini, _file log_ yang dibuat akan diberikan akses membaca (_read_) dan menulis (_write_) kepada pemilik, sehingga bisa dibuat dan dibaca dengan lancar.
