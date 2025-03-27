@@ -636,25 +636,56 @@ Bagian ini akan mengambil waktu saat ini dalam format `YYYY/MM/DD/HH` menggunaka
 ```bash
 uptime_file="$log_directory/uptime_$time_format.log"
 ```
-Di sini, potongan _script_ tersebut akan memberikan nama _file uptime_ dengan menggabungkan _path_ dari `log_directory` yaitu pada kasus ini adalah `/home/ubuntu/metrics`, _string "uptime_"_, _timestamp_ dari `time_format`, dan ekstensi `.log`, sehingga setiap _file uptime_ memiliki nama unik berdasarkan waktu pembuatannya. Sehingga di akhir, _file log_ yang dibuat akan memiliki format nama `path/metrics_YYYY/MM/DD/HH/MM/SS.log`.
+Di sini, potongan _script_ tersebut akan memberikan nama _file uptime_ dengan menggabungkan _path_ dari `log_directory` yaitu pada kasus ini adalah `/home/ubuntu/metrics`, _string "uptime_"_, _timestamp_ dari `time_format`, dan ekstensi `.log`, sehingga setiap _file uptime_ memiliki nama unik berdasarkan waktu pembuatannya. Sehingga di akhir, _file uptime_ yang dibuat akan memiliki format nama `path/uptime_YYYY/MM/DD/HH.log`.
 
 ```bash
-if [ ! -f $log_file ]; then
+if [ ! -f $uptime_file ]; then
         ...
 fi
 ```
-Perintah kondisi atau `if` ini memeriksa apakah _file_ yang disimpan dalam variabel `log_file` tidak ada, yang dituliskan dengan ekspresi `(! -f)`, sehingga perintah di dalam blok `then` hanya akan dijalankan jika _file_ tersebut belum dibuat. Dalam _Bash_, perintah `if` ditutup menggunakan `fi`.
+Perintah kondisi atau `if` ini memeriksa apakah _file_ yang disimpan dalam variabel `uptime_file` tidak ada, yang dituliskan dengan ekspresi `(! -f)`, sehingga perintah di dalam blok `then` hanya akan dijalankan jika _file_ tersebut belum dibuat. Dalam _Bash_, perintah `if` ditutup menggunakan `fi`.
 
 Bagian di dalam perintah `if` akan dijelaskan sebagai berikut: 
    - ```bash
-     touch $log_file
+     touch $uptime_file
      ```
-     Perintah `touch` akan membuat _file log_ yang diinginkan sesuai dengan ketentuan dan syarat yang sudah ditetapkan sebelumnya.
+     Perintah `touch` akan membuat _file uptime_ yang diinginkan sesuai dengan ketentuan dan syarat yang sudah ditetapkan sebelumnya.
    - ```bash
-     echo "mem_total, mem_used, mem_free, mem_shared, mem_buff, mem_available, swap_total, swap_used, swap_free, path, path_size" >$log_file
+     echo "uptime,load_avg_1min,load_avg_5min,load_avg_15min" >$uptime_file
      ```
-     Pada bagian di atas, `echo` akan mencetak bagian _header_ pada _file log_ yang akan dibuat, sehingga isi dari _file_ tersebut akan memiliki keterangan pada baris pertama mengenai informasi apa saja yang tertera di dalamnya. Setelah itu, _output_ dari perintah `echo` akan ditulis ke dalam _file log_ yang sudah dibuat oleh `>$log_file`.
+     Pada bagian di atas, `echo` akan mencetak bagian _header_ pada _file uptime_ yang akan dibuat, sehingga isi dari _file_ tersebut akan memiliki keterangan pada baris pertama mengenai informasi apa saja yang tertera di dalamnya. Setelah itu, _output_ dari perintah `echo` akan ditulis ke dalam _file uptime_ yang sudah dibuat oleh `>$uptime_file`.
    - ```bash
-     chmod 600 "$log_file"
+     chmod 600 "$uptime_file"
      ```
-     Saat ini, _file log_ yang dibuat akan diberikan akses membaca (_read_) dan menulis (_write_) kepada pemilik, sehingga bisa dibuat dan dibaca dengan lancar.
+     Saat ini, _file uptime_ yang dibuat akan diberikan akses membaca (_read_) dan menulis (_write_) kepada pemilik, sehingga bisa dibuat dan dibaca dengan lancar.
+
+```bash
+uptime=$(uptime | awk '{ print $1, $2, $3, $4}')
+```
+Bagian _script_ ini berperan dalam menjalankan perintah `uptime` untuk mendapatkan informasi yang diinginkan yaitu berapa lama komputer sudah dijalankan, lalu menggunakan _pipeline_ `(|)` untuk mengoper hasilnya ke `awk`, yang memproses teks secara baris per baris. Dalam `awk`, `{print $1 $2, $3, $4}` akan mencetak kolom ke-1 sampai ke-4 dari baris tersebut karena di sana letak dari informasi yang diinginkan. Hasil akhirnya disimpan dalam variabel `uptime` menggunakan `$()`.
+
+```bash
+load_avg_1min=$(cat /proc/loadavg | awk '{ print $1 }')
+load_avg_5min=$(cat /proc/loadavg | awk '{ print $2 }')
+load_avg_15min=$(cat /proc/loadavg | awk '{ print $3 }')
+```
+Bagian _script_ ini berperan dalam menjalankan perintah `cat /proc/loadavg` untuk mendapatkan informasi yang diinginkan yaitu _load average system_, lalu menggunakan _pipeline_ `(|)` untuk mengoper hasilnya ke `awk`, yang memproses teks secara baris per baris. Dalam `awk`, dengan menggunakan `{print $n}`, kolom ke-n dari baris tersebut akan dicetak (misal yang dibutuhkan adalah `load_avg_1min`, maka akan terdapat pada kolom ke-1, dst.). Hasil akhirnya disimpan dalam variabel `load_avg_1min` menggunakan `$()`.
+
+```bash
+echo "$uptime$load_avg_1min,$load_avg_5min,$load_avg_15min" >>$uptime_file
+```
+Sama seperti proses pencetakan _header_ pada barisan kode sebelumnya, bagian ini juga akan mencetak isi dari setiap variabel yang sudah ditentukan nilainya menggunakan perintahnya masing-masing. Setelah dicetak, _output_ akan ditambahkan (_append_) ke dalam _file uptime_ yang sudah dibuat dengan menggunakan `>>$uptime_file`, sehingga nilai dari setiap informasi yang dibutuhkan akan terletak di bawah _header_ tanpa menghapus isi _file_ yang sudah ada. 
+
+ - Revisi
+   ```bash
+   chmod 400 "$log_file" #Revisi
+   ```
+   Sebelum melakukan demonstrasi, _script_ ini belum berhasil dalam memastikan pemilik untuk hanya mendapatkan akses membaca. Maka dari itu, _script_ sudah direvisi dengan tambahan `chmod 400` yang membuat _file log_ hanya bisa dibaca, tanpa ditulis (_write_).
+
+   Sekarang akses ke pemilik sudah diperbarui.
+   
+   ![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2008-35-59.png?raw=true)
+
+### Foto Hasil Output
+
+![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2008-35-18.png?raw=true)
