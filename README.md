@@ -689,3 +689,112 @@ Sama seperti proses pencetakan _header_ pada barisan kode sebelumnya, bagian ini
 ### Foto Hasil Output
 
 ![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2008-35-18.png?raw=true)
+
+
+d. cleanup_log.sh; Code Lengkap:
+
+```bash
+#!/bin/bash
+
+log_directory="/home/ubuntu/metrics"
+mkdir -p "$log_directory"
+
+delete_time=$(date -d "yesterday" +"%Y%m%d")
+
+agg_files09=$(ls "$log_directory/metrics_agg_$delete_time"0{0..9}.log)
+agg_files1012=$(ls "$log_directory/metrics_agg_$delete_time"1{0..2}.log)
+agg_files="$agg_files09 $agg_files1012"
+
+for file in $agg_files; do
+    echo "$(basename "$file")"
+done
+
+rm -f $agg_files
+```
+Penjelasan:
+
+```bash
+#!/bin/bash
+```
+Baris pertama _script_/program berisi shebang/hashbang yang berfungsi untuk memberi tahu sistem cara menjalankan _script_ tersebut, yaitu dengan dieksekusi langsung atau melalui _Bash_.
+
+```bash
+log_directory="/home/ubuntu/metrics"
+```
+Deklarasi variabel `log_directory` digunakan untuk menentukan lokasi penyimpanan _file log_, serta mempermudah pengelolaan dan perubahan _path_ dalam _script_.
+
+```bash
+mkdir -p "$log_directory"
+```
+Perintah ini akan membuat direktori yang ditentukan dalam `log_directory` jika belum ada, dengan opsi `-p` yang memastikan tidak terjadi eror jika direktori sudah ada.
+
+```bash
+delete_time=$(date -d "yesterday" +"%Y%m%d")
+```
+Bagian ini mengambil waktu satu hari yang lalu dalam format `YYYY/MM/DD` menggunakan perintah `date`. `-d "1 yesterday"` memberi tahu `date` untuk menghitung waktu satu hari sebelum waktu saat ini. `+"%Y%m%d"` akan menetapkan format hasilnya agar hanya menampilkan tahun, bulan, dan hari. `$()` menjalankan perintah dan menyimpan _output_ ke dalam variabel `delete_time`.
+
+```bash
+agg_files09=$(ls "$log_directory/metrics_agg_$delete_time"0{0..9}.log)
+agg_files1012=$(ls "$log_directory/metrics_agg_$delete_time"1{0..2}.log)
+```
+Di sini, program mencari dan mencocokkan semua _file aggregation_ yang dibuat pada hari sebelumnya di dalam `log_directory` menggunakan perintah `ls`. Variabel `delete_time` yang sudah diisi akan berguna untuk memastikan setiap _file aggregation_ pada hari sebelumnya akan tercantum ke dalam format `YYYY/MM/DD`. Namun, karena _script_ `cleanup_log.sh` hanya perlu menghapus _file aggregation_ pada 12 jam pertama di hari sebelumnya (jam 0 sampai 12), maka akan ditambahkan format penamaan dalam pencarian _file aggretation_. `0{0..9}}` akan mencocokkan semua _file aggregation_ pada jam 00 sampai 09 di hari sebelumnya, lalu dimasukkan ke dalam variabel `agg_files09` menggunakan tanda `$()`. Sementara `1{0..2}` akan mencocokkan semua _file aggregation_ pada jam 10 sampai 12 di hari sebelumnya, lalu dimasukkan ke dalam variabel `agg_files1012` menggunakan tanda `$()`. 
+
+```bash
+agg_files="$agg_files09 $agg_files1012"
+```
+Setelah kedua variabel (`agg_files09` dan `agg_files1012`) terisi oleh _file aggregation_ yang sesuai, maka kedua variabel tersebut akan digabung menjadi satu dalam satu variabel `agg_files`. Dengan cara ini pemrosesan bisa dilakukan dengan lebih mudah. 
+
+```bash
+for file in $agg_files; do
+    echo "$(basename "$file")"
+done
+```
+Bagian ini adalah _loop_ `for` dalam _Bash_ yang digunakan untuk mengulangi setiap _file_ yang ada dalam variabel `agg_files` dan mencetak namanya tanpa _path_ atau direktori. `for file in $agg_files` berperan agar setiap _file_ pada _file aggregation_ yang sudah cocok dan disimpan dalam variabel `agg_files` akan dilakukan (`do`) pencetakan namanya tanpa _path_ menggunakan perintah `echo "$(basename "$file")"`. Lalu diselesaikan dengan `done`.
+
+```bash
+rm -f $agg_files
+```
+Setelah semua _file aggregation_ yang cocok dicetak namanya (tanpa _path_), maka masing-masing akan dihapus menggunakan perintah `rm`. Tanda `-f` bertujuan untuk menghapus _file aggregation_ (`$agg_files`) tanpa konfirmasi. 
+
+### Foto Hasil Output
+
+Sebelum:
+![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2008-53-33.png?raw=true)
+
+Eksekusi _script_:
+
+![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2008-54-29.png?raw=true)
+
+Sesudah:
+![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2008-54-07.png?raw=true)
+
+
+e. crontabs
+
+```bash
+*/5 * * * * /bin/bash /home/ubuntu/praktikum-modul-1-d10/task-4/minute5_log.sh
+0 * * * * /bin/bash /home/ubuntu/praktikum-modul-1-d10/task-4/agg_5min_to_hour.sh
+0 * * * * /bin/bash /home/ubuntu/praktikum-modul-1-d10/task-4/uptime_monitor.sh
+0 0 * * * /bin/bash /home/ubuntu/praktikum-modul-1-d10/task-4/cleanup_log.sh
+```
+Penjelasan:
+
+```bash
+*/5 * * * * /bin/bash /home/ubuntu/praktikum-modul-1-d10/task-4/minute5_log.sh
+```
+_Cron job_ di atas berfungsi untuk menjalankan _script_ `minute5_log.sh` setiap 5 menit menggunakan _Bash_.
+
+```bash
+0 * * * * /bin/bash /home/ubuntu/praktikum-modul-1-d10/task-4/agg_5min_to_hour.sh
+```
+_Cron job_ di atas berfungsi untuk menjalankan _script_ `agg_5min_to_hour.sh` setiap jam (menit ke-0) menggunakan _Bash_.
+
+```bash
+0 * * * * /bin/bash /home/ubuntu/praktikum-modul-1-d10/task-4/uptime_monitor.sh
+```
+_Cron job_ di atas berfungsi untuk menjalankan _script_ `uptime_monitor.sh` setiap jam (menit ke-0) menggunakan _Bash_.
+
+```bash
+0 0 * * * /bin/bash /home/ubuntu/praktikum-modul-1-d10/task-4/cleanup_log.sh
+```
+_Cron job_ di atas berfungsi untuk menjalankan _script_ `cleanup_log.sh` setiap jam 00:00 menggunakan _Bash_.
