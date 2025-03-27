@@ -202,7 +202,7 @@ Bagian _script_ ini berperan dalam menjalankan perintah `du -sh <target_path>` u
 ```bash
 echo "$mem_total, $mem_used, $mem_free, $mem_shared, $mem_buff, $mem_available, $swap_total, $swap_used, $swap_free, $path, $path_size" >>$log_file
 ```
-Sama seperti proses pencetakan _header_ pada barisan kode sebelumnya, bagian ini juga akan mencetak isi dari setiap variabel yang sudah ditentukan nilainya menggunakan perintahnya masing-masing. Setelah dicetak, _output_ akan ditambahkan (_append_) ke dalam _file log_ yang sudah dibuat, sehingga nilai dari setiap informasi yang dibutuhkan akan terletak di bawah _header_ tanpa menghapus isi _file_ yang sudah ada. 
+Sama seperti proses pencetakan _header_ pada barisan kode sebelumnya, bagian ini juga akan mencetak isi dari setiap variabel yang sudah ditentukan nilainya menggunakan perintahnya masing-masing. Setelah dicetak, _output_ akan ditambahkan (_append_) ke dalam _file log_ yang sudah dibuat dengan menggunakan `>>$log_file`, sehingga nilai dari setiap informasi yang dibutuhkan akan terletak di bawah _header_ tanpa menghapus isi _file_ yang sudah ada. 
 
  - Revisi
    ```bash
@@ -210,6 +210,126 @@ Sama seperti proses pencetakan _header_ pada barisan kode sebelumnya, bagian ini
    ```
    Sebelum melakukan demonstrasi, _script_ ini belum berhasil dalam memastikan pemilik untuk hanya mendapatkan akses membaca. Maka dari itu, _script_ sudah direvisi dengan tambahan `chmod 400` yang membuat _file log_ hanya bisa dibaca, tanpa ditulis (_write_).
 
-   (GAMBAR)
-
+   Sekarang akses ke pemilik sudah diperbarui.
    
+   ![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2007-02-13.png?raw=true)
+
+### Foto Hasil Output
+
+![image alt](https://github.com/SuryaAndyartha/tes/blob/main/Screenshot%20from%202025-03-27%2007-01-47.png?raw=true)
+
+b. agg_5min_to_hour.sh; Code Lengkap:
+
+```bash
+#!/bin/bash
+
+log_directory="/home/ubuntu/metrics"
+mkdir -p "$log_directory"
+
+time_format=$(date +"%Y%m%d%H")
+agg_file="$log_directory/metrics_agg_$time_format.log"
+
+previous_hour=$(date -d "1 hour ago" +"%Y%m%d%H")
+log_files=$(ls $log_directory/metrics_$previous_hour*.log)
+
+awk -F ',' '
+NR == 1 { next }  
+{
+    if(NR == 2){
+        for(i = 1; i <= NF; i++){
+            min[i] = max[i] = $i
+            sum[i] = 0
+            count[i] = 0
+        }
+    }
+
+    for(i = 1; i <= NF; i++){
+        if(i == 10){
+            path_value = $i  
+            continue
+        } 
+	else if(i == 11){
+            gsub(/M/, "", $i)
+        }
+
+        if($i+0 == $i){
+            if($i < min[i]){ min[i] = $i }
+            if($i > max[i]){ max[i] = $i }
+            sum[i] += $i
+            count[i]++
+        }
+    }
+}
+END {
+    print "type,mem_total,mem_used,mem_free,mem_shared,mem_buff,mem_available,swap_total,swap_used,swap_free,path,path_size"
+
+    printf "minimum"
+    for(i = 1; i <= NF; i++){
+        if(i == 10){
+            printf ",%s", path_value
+        } 
+	else if(i == 11){
+            printf ",%sM", min[i]
+        } 
+	else{
+            printf ",%s", min[i]
+        }
+    }
+    printf "\n"
+
+    printf "maximum"
+    for(i = 1; i <= NF; i++){
+        if(i == 10){
+            printf ",%s", path_value
+        } 
+	else if(i == 11){
+            printf ",%sM", max[i]
+        } 
+	else{
+            printf ",%s", max[i]
+        }
+    }
+    printf "\n"
+
+    printf "average"
+    for(i = 1; i <= NF; i++){
+        if(i == 10){
+            printf ",%s", path_value
+        } 
+	else if(i == 11){
+            printf ",%sM", (count[i] > 0 ? sum[i] / count[i] : min[i])
+        } 
+	else{
+            printf ",%.1f", (count[i] > 0 ? sum[i] / count[i] : min[i])
+        }
+    }
+    printf "\n"
+}' $log_files > $agg_file
+
+chmod 400 "$agg_file" #Revisi
+```
+
+```bash
+#!/bin/bash
+```
+Baris pertama _script_/program berisi shebang/hashbang yang berfungsi untuk memberi tahu sistem cara menjalankan _script_ tersebut, yaitu dengan dieksekusi langsung atau melalui _Bash_.
+
+```bash
+log_directory="/home/ubuntu/metrics"
+```
+Deklarasi variabel `log_directory` digunakan untuk menentukan lokasi penyimpanan _file log_, serta mempermudah pengelolaan dan perubahan _path_ dalam _script_.
+
+```bash
+mkdir -p "$log_directory"
+```
+Perintah ini akan membuat direktori yang ditentukan dalam `log_directory` jika belum ada, dengan opsi `-p` yang memastikan tidak terjadi eror jika direktori sudah ada.
+
+```bash
+time_format=$(date +"%Y%m%d%H")
+```
+Bagian ini akan mengambil waktu saat ini dalam format `YYYY/MM/DD/HH` menggunakan perintah `date`, lalu hasil atau _output_ dari perintah tersebut akan disimpan dalam variabel `time_format`.
+
+```bash
+agg_file="$log_directory/metrics_agg_$time_format.log"
+```
+Di sini, potongan _script_ tersebut akan memberikan nama _file aggregation_ dengan menggabungkan _path_ dari `log_directory` yaitu pada kasus ini adalah `/home/ubuntu/metrics`, _string "metrics_agg_"_, _timestamp_ dari `time_format`, dan ekstensi `.log`, sehingga setiap file log memiliki nama unik berdasarkan waktu pembuatannya. Sehingga di akhir, _file aggregation_ yang dibuat akan memiliki format nama `path/metrics_agg_YYYY/MM/DD/HH.log`.
